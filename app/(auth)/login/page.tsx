@@ -39,7 +39,7 @@ export default function LoginPage() {
             full_name: email.split('@')[0],
           })
         }
-        setMessage({ type: 'success', text: 'Akun berhasil dibuat! Cek email Anda untuk verifikasi.' })
+        setMessage({ type: 'success', text: 'Akun berhasil dibuat! Silahkan lakukan login.' })
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan'

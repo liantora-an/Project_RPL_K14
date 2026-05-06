@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { updateCartQuantity } from '@/app/actions'
+import { signOutAction, updateCartQuantity } from '@/app/actions'
 import { createClient } from '@/lib/supabase/server'
 import { formatRupiah } from '@/lib/catalog'
 
@@ -27,14 +27,18 @@ async function getCart() {
     redirect('/login?next=/keranjang')
   }
 
-  const { data } = await supabase
-    .from('cart_items')
-    .select('id, quantity, products(id, name, price, image_url, categories(name))')
-    .eq('profile_id', user.id)
-    .order('created_at', { ascending: false })
+  const [{ data: profile }, { data }] = await Promise.all([
+    supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('cart_items')
+      .select('id, quantity, products(id, name, price, image_url, categories(name))')
+      .eq('profile_id', user.id)
+      .order('created_at', { ascending: false }),
+  ])
 
   return {
     user,
+    displayName: profile?.full_name || user.email || '',
     items: ((data ?? []) as unknown as Array<Omit<CartItem, 'products'> & { products: CartItem['products'] | CartItem['products'][] }>).map((item) => ({
       ...item,
       products: Array.isArray(item.products) ? item.products[0] ?? null : item.products,
@@ -43,7 +47,7 @@ async function getCart() {
 }
 
 export default async function CartPage() {
-  const { user, items } = await getCart()
+  const { user, displayName, items } = await getCart()
   const total = items.reduce((sum, item) => sum + Number(item.products?.price ?? 0) * item.quantity, 0)
 
   return (
@@ -56,8 +60,14 @@ export default async function CartPage() {
         <nav>
           <Link href="/toko">Toko</Link>
           <Link href="/keranjang">Keranjang</Link>
-          <Link href="/login">Akun</Link>
+          <Link href="/akun">Akun</Link>
         </nav>
+        <div className="store-actions">
+          <span className="store-user">{displayName}</span>
+          <form action={signOutAction}>
+            <button type="submit" className="store-login">Logout</button>
+          </form>
+        </div>
       </header>
 
       <section className="cart-shell">

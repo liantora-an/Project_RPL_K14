@@ -4,6 +4,7 @@
 DROP TABLE IF EXISTS payments CASCADE;
 DROP TABLE IF EXISTS transaction_items CASCADE;
 DROP TABLE IF EXISTS transactions CASCADE;
+DROP TABLE IF EXISTS promotions CASCADE;
 DROP TABLE IF EXISTS cart_items CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
@@ -56,6 +57,17 @@ CREATE TABLE cart_items (
     quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     UNIQUE(profile_id, product_id)
+);
+
+CREATE TABLE promotions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  discount_percent NUMERIC(5, 2) NOT NULL CHECK (discount_percent > 0 AND discount_percent <= 100),
+  starts_at TIMESTAMP WITH TIME ZONE,
+  ends_at TIMESTAMP WITH TIME ZONE,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 CREATE TABLE transactions (
@@ -117,6 +129,7 @@ ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE promotions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transaction_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
@@ -167,6 +180,28 @@ FOR UPDATE USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
 
 CREATE POLICY "cart_delete_own" ON cart_items
 FOR DELETE USING (auth.uid() = profile_id);
+
+CREATE POLICY "promotions_admin_select" ON promotions
+FOR SELECT USING (
+  EXISTS (SELECT 1 FROM admins WHERE admins.profile_id = auth.uid())
+);
+
+CREATE POLICY "promotions_admin_insert" ON promotions
+FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM admins WHERE admins.profile_id = auth.uid())
+);
+
+CREATE POLICY "promotions_admin_update" ON promotions
+FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM admins WHERE admins.profile_id = auth.uid())
+) WITH CHECK (
+  EXISTS (SELECT 1 FROM admins WHERE admins.profile_id = auth.uid())
+);
+
+CREATE POLICY "promotions_admin_delete" ON promotions
+FOR DELETE USING (
+  EXISTS (SELECT 1 FROM admins WHERE admins.profile_id = auth.uid())
+);
 
 CREATE POLICY "transactions_select_own" ON transactions
 FOR SELECT USING (auth.uid() = profile_id);

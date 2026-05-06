@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { addToCart } from '@/app/actions'
+import { addToCart, signOutAction } from '@/app/actions'
 import { fallbackCategories, fallbackProducts, formatRupiah, type Category, type Product } from '@/lib/catalog'
 
 export const dynamic = 'force-dynamic'
@@ -26,11 +26,11 @@ async function getCatalog() {
 
   return {
     categories: categories?.length ? categories as Category[] : fallbackCategories,
-    products: !error && products?.length ? products as Product[] : fallbackProducts,
+    products: !error && products?.length ? products as Product[] : [],
   }
 }
 
-function StoreHeader() {
+function StoreHeader({ isLoggedIn, displayName }: { isLoggedIn: boolean; displayName: string }) {
   return (
     <header className="store-header">
       <Link href="/" className="brand store-brand" aria-label="Botani Mart">
@@ -45,9 +45,17 @@ function StoreHeader() {
         <Link href="/kontak">Kontak</Link>
       </nav>
       <div className="store-actions">
+        {isLoggedIn && displayName && (
+          <span className="store-user">{displayName}</span>
+        )}
         <Link href="/wishlist" className="store-icon" aria-label="Wishlist">♡</Link>
         <Link href="/keranjang" className="store-icon cart-symbol" aria-label="Keranjang">▾</Link>
-        <Link href="/login" className="store-login">Daftar/Masuk</Link>
+        <Link href={isLoggedIn ? '/akun' : '/login'} className="store-login">{isLoggedIn ? 'Akun' : 'Daftar/Masuk'}</Link>
+        {isLoggedIn && (
+          <form action={signOutAction}>
+            <button type="submit" className="store-login">Logout</button>
+          </form>
+        )}
       </div>
     </header>
   )
@@ -73,6 +81,8 @@ function ProductCard({ product }: { product: Product }) {
         <div className="catalog-buy-row">
           <form action={addToCart}>
             <input type="hidden" name="product_id" value={product.id} />
+            <input type="hidden" name="product_slug" value={product.slug} />
+            <input type="hidden" name="intent" value="add" />
             <button type="submit" className="catalog-cart" aria-label={`Masukkan ${product.name} ke keranjang`}>
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M5 6h16l-2 8H7L5 3H2" />
@@ -82,6 +92,8 @@ function ProductCard({ product }: { product: Product }) {
           </form>
           <form action={addToCart}>
             <input type="hidden" name="product_id" value={product.id} />
+            <input type="hidden" name="product_slug" value={product.slug} />
+            <input type="hidden" name="intent" value="buy" />
             <button type="submit" className="catalog-buy">Beli Sekarang</button>
           </form>
         </div>
@@ -95,6 +107,12 @@ export default async function StorePage({ searchParams }: PageProps) {
   const query = firstParam(params?.q)?.toLowerCase().trim() ?? ''
   const category = firstParam(params?.category) ?? ''
   const sort = firstParam(params?.sort) ?? 'all'
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()
+    : { data: null }
+  const displayName = profile?.full_name || user?.email || ''
   const { categories, products } = await getCatalog()
 
   const filteredProducts = products
@@ -109,11 +127,16 @@ export default async function StorePage({ searchParams }: PageProps) {
       return 0
     })
 
-  const displayProducts = Array.from({ length: Math.max(8, filteredProducts.length) }, (_, index) => filteredProducts[index % filteredProducts.length]).filter(Boolean)
+  const displayProducts = filteredProducts.length
+    ? Array.from(
+        { length: Math.max(8, filteredProducts.length) },
+        (_, index) => filteredProducts[index % filteredProducts.length]
+      ).filter(Boolean)
+    : []
 
   return (
     <main className="store-page">
-      <StoreHeader />
+      <StoreHeader isLoggedIn={Boolean(user)} displayName={displayName} />
 
       <section className="store-hero">
         <Image src="/hero-bg.jpg" alt="Botani Mart" fill priority sizes="100vw" />
@@ -163,6 +186,13 @@ export default async function StorePage({ searchParams }: PageProps) {
             <ProductCard key={`${product.id}-${index}`} product={product} />
           ))}
         </div>
+
+        {!displayProducts.length && (
+          <div className="empty-cart">
+            <h2>Produk belum tersedia</h2>
+            <p>Tambah produk di database dulu agar tampil di katalog.</p>
+          </div>
+        )}
 
         <nav className="catalog-pagination" aria-label="Pagination katalog">
           <Link href="/toko">←</Link>

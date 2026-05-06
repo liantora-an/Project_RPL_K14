@@ -1,5 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { signOutAction } from '@/app/actions'
+import { createClient } from '@/lib/supabase/server'
 
 const stats = [
   { eyebrow: 'Sejak Tahun', value: '2018', caption: 'Hingga kini' },
@@ -96,7 +98,14 @@ function ArrowIcon() {
   )
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()
+    : { data: null }
+  const displayName = profile?.full_name || user?.email || ''
+
   return (
     <main className="home-page">
       <header className="site-header">
@@ -114,15 +123,23 @@ export default function HomePage() {
         </nav>
 
         <div className="header-actions">
+          {user && (
+            <span className="header-user">{displayName}</span>
+          )}
           <Link href="/wishlist" className="icon-button" aria-label="Wishlist">
             <HeartIcon />
           </Link>
           <Link href="/keranjang" className="icon-button" aria-label="Keranjang">
             <CartIcon />
           </Link>
-          <Link href="/login" className="market-button">
-            BotaniMarket
+          <Link href={user ? '/akun' : '/login'} className="market-button">
+            {user ? 'Akun' : 'Login/Daftar'}
           </Link>
+          {user && (
+            <form action={signOutAction}>
+              <button type="submit" className="market-button">Logout</button>
+            </form>
+          )}
         </div>
       </header>
 
