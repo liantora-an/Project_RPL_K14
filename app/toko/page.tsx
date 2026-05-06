@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { addToCart, signOutAction } from '@/app/actions'
-import { fallbackCategories, fallbackProducts, formatRupiah, type Category, type Product } from '@/lib/catalog'
+import { fallbackCategories, formatRupiah, normalizeProducts, type Category, type Product } from '@/lib/catalog'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +26,7 @@ async function getCatalog() {
 
   return {
     categories: categories?.length ? categories as Category[] : fallbackCategories,
-    products: !error && products?.length ? products as Product[] : [],
+    products: !error && products?.length ? normalizeProducts(products) : [],
   }
 }
 
