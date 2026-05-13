@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { signOutAction } from '@/app/actions'
 import { createClient } from '@/lib/supabase/server'
+import Taskbar from '@/components/Taskbar'
 
 const stats = [
   { eyebrow: 'Sejak Tahun', value: '2018', caption: 'Hingga kini' },
@@ -73,6 +73,14 @@ const testimonials = [
   },
 ]
 
+function ArrowIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  )
+}
+
 function CartIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
@@ -90,14 +98,6 @@ function HeartIcon() {
   )
 }
 
-function ArrowIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  )
-}
-
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -108,40 +108,7 @@ export default async function HomePage() {
 
   return (
     <main className="home-page">
-      <header className="site-header">
-        <Link href="/" className="brand" aria-label="Botani Mart">
-          <span>BOTANI</span>
-          <em>mart</em>
-        </Link>
-
-        <nav className="main-nav" aria-label="Navigasi utama">
-          <Link href="/">Beranda</Link>
-          <Link href="/toko">Toko</Link>
-          <Link href="/kegiatan">Kegiatan</Link>
-          <Link href="/informasi">Informasi</Link>
-          <Link href="/kontak">Kontak</Link>
-        </nav>
-
-        <div className="header-actions">
-          {user && (
-            <span className="header-user">{displayName}</span>
-          )}
-          <Link href="/wishlist" className="icon-button" aria-label="Wishlist">
-            <HeartIcon />
-          </Link>
-          <Link href="/keranjang" className="icon-button" aria-label="Keranjang">
-            <CartIcon />
-          </Link>
-          <Link href={user ? '/akun' : '/login'} className="market-button">
-            {user ? 'Akun' : 'Login/Daftar'}
-          </Link>
-          {user && (
-            <form action={signOutAction}>
-              <button type="submit" className="market-button">Logout</button>
-            </form>
-          )}
-        </div>
-      </header>
+      <Taskbar isLoggedIn={Boolean(user)} displayName={displayName} email={user?.email ?? ''} />
 
       <section className="hero-section">
         <Image src="/hero-bg.jpg" alt="Toko Botani Mart" fill priority sizes="100vw" className="section-bg" />

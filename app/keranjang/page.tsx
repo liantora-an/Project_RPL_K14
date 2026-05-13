@@ -1,9 +1,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { signOutAction, updateCartQuantity } from '@/app/actions'
+import { updateCartQuantity } from '@/app/actions'
 import { createClient } from '@/lib/supabase/server'
 import { formatRupiah } from '@/lib/catalog'
+import Taskbar from '@/components/Taskbar'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,23 +53,7 @@ export default async function CartPage() {
 
   return (
     <main className="cart-page">
-      <header className="admin-header">
-        <Link href="/" className="brand" aria-label="Botani Mart">
-          <span>BOTANI</span>
-          <em>mart</em>
-        </Link>
-        <nav>
-          <Link href="/toko">Toko</Link>
-          <Link href="/keranjang">Keranjang</Link>
-          <Link href="/akun">Akun</Link>
-        </nav>
-        <div className="store-actions">
-          <span className="store-user">{displayName}</span>
-          <form action={signOutAction}>
-            <button type="submit" className="store-login">Logout</button>
-          </form>
-        </div>
-      </header>
+      <Taskbar isLoggedIn displayName={displayName} email={user.email ?? ''} />
 
       <section className="cart-shell">
         <div className="admin-title">

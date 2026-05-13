@@ -1,7 +1,7 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { updateProfile, signOutAction } from '@/app/actions'
+import { updateProfile } from '@/app/actions'
 import { createClient } from '@/lib/supabase/server'
+import Taskbar from '@/components/Taskbar'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,23 +41,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
 
   return (
     <main className="account-page">
-      <header className="admin-header">
-        <Link href="/" className="brand" aria-label="Botani Mart">
-          <span>BOTANI</span>
-          <em>mart</em>
-        </Link>
-        <nav>
-          <Link href="/toko">Toko</Link>
-          <Link href="/keranjang">Keranjang</Link>
-          <Link href="/akun">Akun</Link>
-        </nav>
-        <div className="store-actions">
-          <span className="store-user">{displayName}</span>
-          <form action={signOutAction}>
-            <button type="submit" className="store-login">Logout</button>
-          </form>
-        </div>
-      </header>
+      <Taskbar isLoggedIn displayName={displayName} email={user.email ?? ''} />
 
       <section className="admin-shell">
         <div className="admin-title">

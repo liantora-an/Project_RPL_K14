@@ -1,8 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { addToCart, signOutAction } from '@/app/actions'
+import { addToCart } from '@/app/actions'
 import { fallbackCategories, formatRupiah, normalizeProducts, type Category, type Product } from '@/lib/catalog'
+import Taskbar from '@/components/Taskbar'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,37 +29,6 @@ async function getCatalog() {
     categories: categories?.length ? categories as Category[] : fallbackCategories,
     products: !error && products?.length ? normalizeProducts(products) : [],
   }
-}
-
-function StoreHeader({ isLoggedIn, displayName }: { isLoggedIn: boolean; displayName: string }) {
-  return (
-    <header className="store-header">
-      <Link href="/" className="brand store-brand" aria-label="Botani Mart">
-        <span>BOTANI</span>
-        <em>mart</em>
-      </Link>
-      <nav className="store-nav" aria-label="Navigasi toko">
-        <Link href="/">Beranda</Link>
-        <Link href="/toko" className="active">Toko</Link>
-        <Link href="/kegiatan">Kegiatan</Link>
-        <Link href="/informasi">Informasi</Link>
-        <Link href="/kontak">Kontak</Link>
-      </nav>
-      <div className="store-actions">
-        {isLoggedIn && displayName && (
-          <span className="store-user">{displayName}</span>
-        )}
-        <Link href="/wishlist" className="store-icon" aria-label="Wishlist">♡</Link>
-        <Link href="/keranjang" className="store-icon cart-symbol" aria-label="Keranjang">▾</Link>
-        <Link href={isLoggedIn ? '/akun' : '/login'} className="store-login">{isLoggedIn ? 'Akun' : 'Daftar/Masuk'}</Link>
-        {isLoggedIn && (
-          <form action={signOutAction}>
-            <button type="submit" className="store-login">Logout</button>
-          </form>
-        )}
-      </div>
-    </header>
-  )
 }
 
 function ProductCard({ product }: { product: Product }) {
@@ -127,21 +97,16 @@ export default async function StorePage({ searchParams }: PageProps) {
       return 0
     })
 
-  const displayProducts = filteredProducts.length
-    ? Array.from(
-        { length: Math.max(8, filteredProducts.length) },
-        (_, index) => filteredProducts[index % filteredProducts.length]
-      ).filter(Boolean)
-    : []
+  const displayProducts = filteredProducts
 
   return (
     <main className="store-page">
-      <StoreHeader isLoggedIn={Boolean(user)} displayName={displayName} />
+      <Taskbar isLoggedIn={Boolean(user)} displayName={displayName} email={user?.email ?? ''} />
 
       <section className="store-hero">
         <Image src="/hero-bg.jpg" alt="Botani Mart" fill priority sizes="100vw" />
         <div />
-        <h1><span>Selamat berbelanja!</span>Toko/Shop</h1>
+        <h1><span>Selamat berbelanja!</span>Toko</h1>
       </section>
 
       <section className="catalog-shell">
